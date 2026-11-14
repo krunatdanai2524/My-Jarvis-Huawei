@@ -1,5 +1,5 @@
-const CACHE = "my-jarvis-huawei-v1-2-whisper-6";
-const FILES = ["./", "./index.html", "./styles.css", "./app.js", "./voice-local.js", "./stt-worker.js", "./manifest.webmanifest", "./icon.svg","./assets/jarvis-greeting-th.mp3"];
+const CACHE = "my-jarvis-huawei-v1-2-voice-7";
+const FILES = ["./", "./index.html", "./styles.css", "./app.js", "./voice-local.js", "./stt-worker.js", "./manifest.webmanifest", "./icon.svg","./assets/jarvis-greeting-th.mp3", "./assets/jarvis-ack-th.mp3"];
 self.addEventListener("install", event => {
  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
 });
