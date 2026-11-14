@@ -14,7 +14,7 @@
 <body>
 <div class="shell">
 <header class="topbar">
- <div class="brand"><div class="brand-mark">J</div><div><div class="brand-main">MY <span>JARVIS</span> <small>v1.1</small></div><div class="brand-sub">KRUNUTH • HUAWEI EDITION</div></div></div>
+ <div class="brand"><div class="brand-mark">J</div><div><div class="brand-main">MY <span>JARVIS</span> <small>v1.1.1</small></div><div class="brand-sub">KRUNUTH • HUAWEI EDITION</div></div></div>
  <div class="badge" id="network">กำลังตรวจสอบระบบ</div>
 </header>
 <main>
@@ -34,7 +34,9 @@
    <input id="command" maxlength="300" placeholder="เช่น เปิด Canva, บอกเวลา, จดบันทึก เตรียมสื่อการสอน">
    <button class="btn primary" type="submit">ส่งคำสั่ง</button>
   </form>
+  <p id="heardText" class="hint" role="status" aria-live="polite">เสียงที่จับได้: ยังไม่มี</p>
   <p id="voiceInfo" class="hint">กำลังตรวจสอบความสามารถด้านเสียงของเบราว์เซอร์...</p>
+  <p class="hint">ทดสอบแบบพิมพ์ก่อน: พิมพ์ "บอกเวลา" แล้วกดส่งคำสั่ง หากปุ่มรับเสียงค้างเกิน 15 วินาที ระบบจะแจ้งข้อผิดพลาด</p>
   <div id="linkFallback" class="link-fallback" hidden></div>
  </section>
  <section class="cards">
