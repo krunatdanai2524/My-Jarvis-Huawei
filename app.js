@@ -41,7 +41,7 @@ function renderHistory(){
 function log(message){history.unshift({at:new Date().toLocaleString("th-TH"),message:String(message)});history=history.slice(0,40);store.set("mjv11.history",JSON.stringify(history));renderHistory()}
 function status(message){$("status").textContent=message}
 let currentUtterance=null, speechTimer=0, ttsAttempted=false, ttsStarted=false;
-const JARVIS_RECORDING = "https://resource2.heygen.ai/text_to_speech/8f1bdae5d24f414ab7bb1c2e4df3455e/bba701d6054041ed881626391e02865c/id=bac1d339640742d9aedf3700460ff3da.mp3";
+const JARVIS_RECORDING = "./assets/jarvis-greeting-th.mp3";
 function playRecordedGreeting(){
  const box=$("recordedAudioWrap"),audio=$("recordedAudio");
  box.hidden=false;
