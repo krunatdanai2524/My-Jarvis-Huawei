@@ -24,6 +24,7 @@ const store={
  remove(key){try{localStorage.removeItem(key)}catch{}}
 };
 let speech=null;
+let speechWatchdog=0;
 let history=[];
 try {const old=JSON.parse(store.get("mjv11.history")||"[]");if(Array.isArray(old))history=old.slice(0,40)}catch{}
 $("notes").value=store.get("mjv11.notes");
@@ -95,14 +96,82 @@ function send(text){
  respond("ตอนนี้รองรับคำสั่งพื้นฐานเท่านั้น กดวิธีสั่งงานเพื่อดูคำสั่งที่ใช้ได้ครับ");
 }
 function listen(){
- if(!SpeechAPI){respond("Huawei Browser นี้ยังไม่พบระบบแปลงเสียงภาษาไทย กรุณาใช้ช่องพิมพ์คำสั่งก่อนครับ",false);return}
+ if(!SpeechAPI){
+  respond("เบราว์เซอร์นี้ยังไม่รองรับการแปลงเสียงเป็นข้อความ กรุณาใช้ช่องพิมพ์คำสั่งครับ",false);
+  return;
+ }
  if(speech){try{speech.stop()}catch{}return}
- const r=new SpeechAPI();speech=r;r.lang="th-TH";r.continuous=false;r.interimResults=false;
- r.onstart=()=>{$("btnListen").classList.add("listening");$("btnListen").textContent="■ หยุดฟัง";status("กำลังฟังคำสั่งภาษาไทย...")};
- r.onresult=e=>{const t=e.results&&e.results[0]&&e.results[0][0]&&e.results[0][0].transcript;if(t)send(t)};
- r.onerror=e=>{status("รับเสียงไม่สำเร็จ: "+e.error);log("การรับเสียง: "+e.error)};
- r.onend=()=>{speech=null;$("btnListen").classList.remove("listening");$("btnListen").textContent="🎙 เริ่มพูดคำสั่ง"};
- try{r.start()}catch(e){speech=null;respond("เปิดไมโครโฟนไม่ได้: "+e.message,false)}
+ const r=new SpeechAPI();
+ speech=r;
+ r.lang="th-TH";r.continuous=false;r.interimResults=true;r.maxAlternatives=1;
+ let hasResult=false, lastHeard="", hasError=false;
+ const setText=t=>{if($("heardText"))$("heardText").textContent=t};
+ function reset(){
+  clearTimeout(speechWatchdog);speechWatchdog=0;
+  if(speech===r)speech=null;
+  $("btnListen").classList.remove("listening");
+  $("btnListen").textContent="🎙 เริ่มพูดคำสั่ง";
+ }
+ function timeout(){
+  if(speech!==r||hasResult)return;
+  hasError=true;
+  status("ระบบรับเสียงไม่ส่งผลกลับภายใน 15 วินาที ลองพิมพ์คำสั่งหรือใช้ไมโครโฟนบนแป้นพิมพ์ครับ");
+  setText("ยังไม่มีข้อความที่แปลงจากเสียงได้");
+  log("VOICE TIMEOUT: เบราว์เซอร์ไม่ส่งผลการรู้จำเสียงกลับมา");
+  try{r.abort()}catch{}
+  reset();
+ }
+ r.onstart=()=>{
+  $("btnListen").classList.add("listening");
+  $("btnListen").textContent="■ หยุดฟัง";
+  status("เริ่มรับเสียงแล้ว กรุณาพูดคำสั่งไทยสั้น ๆ");
+  setText("กำลังรอผลการรู้จำเสียง...");
+  log("VOICE START: เริ่มระบบรู้จำเสียง");
+ };
+ r.onaudiostart=()=>{log("VOICE AUDIO: เริ่มเปิดช่องรับเสียง")};
+ r.onspeechstart=()=>{status("ตรวจพบเสียงพูด กำลังแปลงเป็นข้อความ...")};
+ r.onresult=e=>{
+  const results=e.results;
+  if(!results||!results.length)return;
+  const index=Math.max(0,e.resultIndex||0);
+  const item=results[index];
+  const transcript=item&&item[0]&&item[0].transcript;
+  if(!transcript)return;
+  lastHeard=String(transcript).trim();
+  setText("Jarvis ได้ยิน: "+lastHeard+(item.isFinal?"":" (กำลังยืนยัน)"));
+  status("ได้ยิน: "+lastHeard);
+  if(item.isFinal&&!hasResult){
+   hasResult=true;
+   log("VOICE RESULT: "+lastHeard);
+   reset();
+   try{r.stop()}catch{}
+   send(lastHeard);
+  }
+ };
+ r.onnomatch=()=>{hasError=true;status("ได้ยินเสียงแต่แปลงเป็นคำสั่งไม่ได้ ลองพูดชัด ๆ หรือพิมพ์แทนครับ");log("VOICE NO MATCH")};
+ r.onerror=e=>{
+  hasError=true;
+  const error=String(e.error||"unknown");
+  const help={
+   "not-allowed":"เบราว์เซอร์ไม่ได้รับอนุญาตให้ใช้ไมโครโฟน",
+   "service-not-allowed":"บริการรู้จำเสียงถูกปิดหรือไม่รองรับ",
+   "language-not-supported":"บริการรู้จำเสียงไม่รองรับภาษาไทย",
+   "network":"บริการรู้จำเสียงเชื่อมต่อไม่ได้",
+   "no-speech":"ไม่ได้ยินเสียงพูด",
+   "audio-capture":"เบราว์เซอร์รับข้อมูลจากไมโครโฟนไม่ได้"
+  };
+  status("รู้จำเสียงไม่สำเร็จ: "+(help[error]||error)+" ใช้ช่องพิมพ์คำสั่งได้ครับ");
+  log("VOICE ERROR: "+error);
+ };
+ r.onend=()=>{
+  reset();
+  if(!hasResult&&!hasError){
+   if(lastHeard){log("VOICE PARTIAL: "+lastHeard);send(lastHeard)}
+   else {status("ยังไม่ได้รับข้อความจากเสียง ลองใช้ปุ่มทดสอบไมโครโฟนหรือพิมพ์คำสั่งครับ");log("VOICE END: ไม่มีข้อความจากเสียง")}
+  }
+ };
+ speechWatchdog=setTimeout(timeout,15000);
+ try{r.start()}catch(e){hasError=true;reset();respond("เริ่มรับเสียงไม่ได้: "+e.message,false)}
 }
 async function micTest(){
  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
