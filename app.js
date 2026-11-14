@@ -40,17 +40,94 @@ function renderHistory(){
 }
 function log(message){history.unshift({at:new Date().toLocaleString("th-TH"),message:String(message)});history=history.slice(0,40);store.set("mjv11.history",JSON.stringify(history));renderHistory()}
 function status(message){$("status").textContent=message}
-function say(message){
- if(!ttsSupported)return;
+let currentUtterance=null, speechTimer=0, ttsAttempted=false, ttsStarted=false;
+function ttsInfo(message, record=false){
+ const label=$("ttsDebug");
+ if(label)label.textContent="สถานะเสียงตอบ: "+message;
+ if(record)log("TTS: "+message);
+}
+function listVoices(){
+ if(!ttsSupported)return [];
+ try{return speechSynthesis.getVoices()||[]}catch{return []}
+}
+function updateVoiceInfo(){
+ const voices=listVoices();
+ const thai=voices.filter(v=>String(v.lang).toLowerCase().startsWith("th"));
+ const english=voices.filter(v=>String(v.lang).toLowerCase().startsWith("en"));
+ const inv=$("voiceInventory");
+ if(inv)inv.textContent=voices.length+" เสียง (ไทย "+thai.length+", อังกฤษ "+english.length+")";
+ if(!ttsSupported){$("tts").textContent="ไม่พบระบบ TTS";$("tts").className="bad"}
+ else if(voices.length===0){$("tts").textContent="มี API แต่ไม่พบเสียงติดตั้ง";$("tts").className="warning"}
+ else if(thai.length===0){$("tts").textContent="ไม่พบเสียงภาษาไทย";$("tts").className="warning"}
+ else{$("tts").textContent="พบเสียงไทย (ยังต้องฟังทดสอบ)";$("tts").className="good"}
+}
+function stopTts(){
+ clearTimeout(speechTimer);
+ currentUtterance=null;
+ if(ttsSupported){try{speechSynthesis.cancel()}catch{}}
+}
+function say(message, lang="th-TH", isTest=false){
+ if(!ttsSupported){
+  ttsInfo("เบราว์เซอร์ไม่มี API สังเคราะห์เสียง ต้องใช้บริการ TTS แยก",true);return;
+ }
+ // Do not repeatedly attempt an engine that did not start; manual tests can retry.
+ if(!isTest&&ttsAttempted&&!ttsStarted)return;
+ ttsAttempted=true;
+ stopTts();
+ updateVoiceInfo();
+ const voices=listVoices();
+ const voice=voices.find(v=>String(v.lang).toLowerCase().startsWith(lang.slice(0,2).toLowerCase()));
+ const noVoice=voices.length===0?" (เบราว์เซอร์แจ้งว่าไม่มีรายการเสียง)":
+  (!voice?" (ไม่พบเสียงภาษาที่ต้องการ)":"");
  try{
-  speechSynthesis.cancel();
   const utter=new SpeechSynthesisUtterance(String(message));
-  utter.lang="th-TH";utter.rate=.95;
-  const voices=speechSynthesis.getVoices();
-  const thai=voices.find(v=>String(v.lang).toLowerCase().startsWith("th"));
-  if(thai)utter.voice=thai;
+  utter.lang=lang;utter.rate=.95;utter.volume=1;
+  if(voice)utter.voice=voice;
+  currentUtterance=utter;
+  let started=false;
+  ttsInfo("ส่งคำขอพูด "+lang+noVoice+" กำลังรอผล...");
+  utter.onstart=()=>{
+   if(currentUtterance!==utter)return;
+   started=true;ttsStarted=true;
+   ttsInfo("ระบบรายงานว่ากำลังพูด "+lang+" (หากไม่ได้ยิน ให้ตรวจเสียงสื่อและบลูทูธ)",true);
+  };
+  utter.onend=()=>{
+   if(currentUtterance!==utter)return;
+   clearTimeout(speechTimer);currentUtterance=null;
+   ttsInfo("ระบบแจ้งว่าพูดจบแล้ว แต่ยังตรวจไม่ได้ว่าลำโพงมีเสียงจริง",true);
+  };
+  utter.onerror=e=>{
+   if(currentUtterance!==utter)return;
+   clearTimeout(speechTimer);currentUtterance=null;
+   ttsInfo("ข้อผิดพลาด "+String(e.error||"unknown")+noVoice+" กรุณาดูประวัติคำสั่ง",true);
+  };
+  speechTimer=setTimeout(()=>{
+   if(currentUtterance!==utter)return;
+   ttsInfo(started?"ระบบเริ่มพูดแล้วแต่ยังไม่ส่งสถานะจบ":"ไม่ได้รับสถานะเริ่มพูดภายใน 12 วินาที อาจไม่มีเสียง TTS ในเครื่อง",true);
+   currentUtterance=null;
+   try{speechSynthesis.cancel()}catch{}
+  },12000);
   speechSynthesis.speak(utter);
- }catch(e){log("เสียงพูดตอบขัดข้อง: "+e.message)}
+ }catch(e){stopTts();ttsInfo("เริ่มเสียงไม่สำเร็จ: "+e.message,true)}
+}
+async function testSpeaker(){
+ const Ctx=window.AudioContext||window.webkitAudioContext;
+ if(!Ctx){ttsInfo("ไม่รองรับ Web Audio API ในเบราว์เซอร์นี้",true);return}
+ let ctx;
+ try{
+  ctx=new Ctx();
+  if(ctx.state==="suspended")await ctx.resume();
+  const oscillator=ctx.createOscillator(), volume=ctx.createGain();
+  oscillator.type="sine";oscillator.frequency.value=660;volume.gain.value=.12;
+  oscillator.connect(volume);volume.connect(ctx.destination);
+  const start=ctx.currentTime;
+  volume.gain.setValueAtTime(.0001,start);
+  volume.gain.exponentialRampToValueAtTime(.12,start+.03);
+  volume.gain.exponentialRampToValueAtTime(.0001,start+.65);
+  oscillator.start(start);oscillator.stop(start+.7);
+  oscillator.onended=()=>{ctx.close().catch(()=>{})};
+  ttsInfo("เล่นเสียงปี๊บแล้ว หากไม่ได้ยินให้เพิ่มระดับเสียงสื่อ (Media) และตรวจบลูทูธ",true);
+ }catch(e){if(ctx)ctx.close().catch(()=>{});ttsInfo("เปิดลำโพงผ่าน Web Audio ไม่สำเร็จ: "+e.message,true)}
 }
 function respond(message,read=true){status(message);log("จาร์วิส: "+message);if(read)say(message)}
 function openSite(action){
@@ -198,20 +275,17 @@ function capabilities(){
  $("network").textContent=navigator.onLine?"● LOCAL MODE · ONLINE":"● LOCAL MODE · OFFLINE";
  $("asr").textContent=SpeechAPI?"พบ API (ต้องทดสอบไทย)":"ไม่พบ API";
  $("asr").className=SpeechAPI?"good":"warning";
- $("tts").textContent=ttsSupported?"พบระบบเสียง (ทดสอบอีกครั้ง)":"ไม่พบระบบเสียง";
- $("tts").className=ttsSupported?"good":"warning";
- if(ttsSupported){
-  const voices=speechSynthesis.getVoices();
-  if(voices.some(v=>String(v.lang).toLowerCase().startsWith("th")))$("tts").textContent="พบเสียงภาษาไทย"
- }
+ updateVoiceInfo();
  $("voiceInfo").textContent=SpeechAPI?"กดปุ่มเริ่มพูดคำสั่ง แล้วอนุญาตไมโครโฟน การรองรับภาษาไทยต้องทดสอบจริง":"เบราว์เซอร์นี้ไม่รองรับการแปลงเสียงด้วย Web Speech API สามารถพิมพ์คำสั่งได้";
  $("btnListen").disabled=!SpeechAPI;
  if(!isSecureContext)$("micState").textContent="ต้องเปิดผ่าน HTTPS"
 }
 $("commandForm").addEventListener("submit",e=>{e.preventDefault();send($("command").value)});
 $("btnListen").addEventListener("click",listen);
-$("btnSpeak").addEventListener("click",()=>respond("สวัสดีครับครูณัฐ ผมจาร์วิส พร้อมรับคำสั่งครับ"));
-$("btnStop").addEventListener("click",()=>{if(ttsSupported)speechSynthesis.cancel();if(speech)try{speech.stop()}catch{}status("หยุดเสียงแล้วครับ")});
+$("btnSpeak").addEventListener("click",()=>say("สวัสดีครับครูณัฐ ผมจาร์วิส พร้อมรับคำสั่งครับ","th-TH",true));
+$("btnSpeakEn").addEventListener("click",()=>say("Hello, this is Jarvis. Audio system test.","en-US",true));
+$("btnBeep").addEventListener("click",testSpeaker);
+$("btnStop").addEventListener("click",()=>{stopTts();if(speech)try{speech.stop()}catch{}status("หยุดเสียงแล้วครับ");ttsInfo("หยุดเสียงแล้ว")});
 $("quickGrid").addEventListener("click",e=>{const b=e.target.closest("[data-action]");if(b)execute(b.dataset.action)});
 $("btnMicTest").addEventListener("click",micTest);
 $("btnSave").addEventListener("click",()=>saveNote());
@@ -220,5 +294,5 @@ $("btnClear").addEventListener("click",()=>{history=[];store.remove("mjv11.histo
 window.addEventListener("online",capabilities);window.addEventListener("offline",capabilities);
 if(ttsSupported)speechSynthesis.addEventListener?.("voiceschanged",capabilities);
 if("serviceWorker" in navigator&&window.isSecureContext)navigator.serviceWorker.register("./sw.js").catch(()=>{});
-renderHistory();capabilities();log("My Jarvis v1.1 เริ่มใช้งาน");
+renderHistory();capabilities();setTimeout(updateVoiceInfo,1700);log("My Jarvis v1.1.2 เริ่มใช้งาน");
 })();
