@@ -1,4 +1,4 @@
-const CACHE = "my-jarvis-huawei-v1-1-voicefix-2";
+const CACHE = "my-jarvis-huawei-v1-1-tts-diagnostic-3";
 const FILES = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./icon.svg"];
 self.addEventListener("install", event => {
  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
