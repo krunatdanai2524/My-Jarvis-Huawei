@@ -45,6 +45,8 @@
       <span id="whisperState" role="status" aria-live="polite">ยังไม่ได้โหลดโมเดล</span>
     </div>
     <p id="whisperHeard" class="hint" aria-live="polite">ข้อความจากเสียง: ยังไม่มี</p>
+    <button id="btnAckReplay" class="btn" type="button" hidden>▶ ฟังเสียงตอบรับ</button>
+    <audio id="ackAudio" preload="none" src="./assets/jarvis-ack-th.mp3"></audio>
     <p class="hint">อัดเสียงคำสั่งสั้น ๆ ประมาณ 3–8 วินาที แล้วกดหยุดเพื่อแปลงข้อความ เมื่อได้ผล ระบบจะส่งเข้า Jarvis อัตโนมัติ การเปิดเว็บอื่นอาจต้องแตะลิงก์ยืนยันเนื่องจากเบราว์เซอร์บล็อกป๊อปอัป</p>
   </section>
   <form id="commandForm" class="command-row">
