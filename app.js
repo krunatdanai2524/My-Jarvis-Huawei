@@ -41,6 +41,29 @@ function renderHistory(){
 function log(message){history.unshift({at:new Date().toLocaleString("th-TH"),message:String(message)});history=history.slice(0,40);store.set("mjv11.history",JSON.stringify(history));renderHistory()}
 function status(message){$("status").textContent=message}
 let currentUtterance=null, speechTimer=0, ttsAttempted=false, ttsStarted=false;
+const JARVIS_RECORDING = "https://resource2.heygen.ai/text_to_speech/8f1bdae5d24f414ab7bb1c2e4df3455e/bba701d6054041ed881626391e02865c/id=bac1d339640742d9aedf3700460ff3da.mp3";
+function playRecordedGreeting(){
+ const box=$("recordedAudioWrap"),audio=$("recordedAudio");
+ box.hidden=false;
+ if(!audio.src)audio.src=JARVIS_RECORDING;
+ audio.volume=1;
+ audio.onplaying=()=>{ttsInfo("กำลังเล่นเสียงทักทายจากไฟล์ MP3 ไม่ใช้ระบบ TTS ของเบราว์เซอร์",true)};
+ audio.onended=()=>ttsInfo("ไฟล์เสียงทักทายเล่นจบแล้ว",true);
+ audio.onerror=()=>{
+  ttsInfo("โหลดไฟล์เสียงไม่ได้ อาจมีปัญหาการเชื่อมต่อเซิร์ฟเวอร์เสียง",true);
+  const fallback=$("linkFallback");fallback.hidden=false;
+  const link=document.createElement("a");link.href=JARVIS_RECORDING;
+  link.target="_blank";link.rel="noopener noreferrer";link.textContent="แตะเพื่อเปิดไฟล์เสียงโดยตรง";
+  fallback.replaceChildren(link);
+ };
+ try{
+  const played=audio.play();
+  if(played&&typeof played.catch==="function")played.catch(e=>{
+   ttsInfo("เบราว์เซอร์ยังไม่เริ่มเล่นเสียง: "+e.name+" โปรดแตะ Play ในแถบเครื่องเล่นเสียง",true);
+  });
+ }catch(e){ttsInfo("เล่นไฟล์เสียงไม่ได้: "+e.message,true)}
+}
+
 function ttsInfo(message, record=false){
  const label=$("ttsDebug");
  if(label)label.textContent="สถานะเสียงตอบ: "+message;
@@ -68,7 +91,8 @@ function stopTts(){
 }
 function say(message, lang="th-TH", isTest=false){
  if(!ttsSupported){
-  ttsInfo("เบราว์เซอร์ไม่มี API สังเคราะห์เสียง ต้องใช้บริการ TTS แยก",true);return;
+  if(lang==="th-TH"&&String(message).includes("สวัสดีครับครูณัฐ"))return playRecordedGreeting();
+  ttsInfo("ไม่มี TTS สำหรับพูดข้อความใหม่อิสระ ตอนนี้ใช้เสียงทักทาย MP3 แทนได้",true);return;
  }
  // Do not repeatedly attempt an engine that did not start; manual tests can retry.
  if(!isTest&&ttsAttempted&&!ttsStarted)return;
@@ -283,9 +307,10 @@ function capabilities(){
 $("commandForm").addEventListener("submit",e=>{e.preventDefault();send($("command").value)});
 $("btnListen").addEventListener("click",listen);
 $("btnSpeak").addEventListener("click",()=>say("สวัสดีครับครูณัฐ ผมจาร์วิส พร้อมรับคำสั่งครับ","th-TH",true));
+$("btnRecorded").addEventListener("click",playRecordedGreeting);
 $("btnSpeakEn").addEventListener("click",()=>say("Hello, this is Jarvis. Audio system test.","en-US",true));
 $("btnBeep").addEventListener("click",testSpeaker);
-$("btnStop").addEventListener("click",()=>{stopTts();if(speech)try{speech.stop()}catch{}status("หยุดเสียงแล้วครับ");ttsInfo("หยุดเสียงแล้ว")});
+$("btnStop").addEventListener("click",()=>{if($("recordedAudio"))$("recordedAudio").pause();stopTts();if(speech)try{speech.stop()}catch{}status("หยุดเสียงแล้วครับ");ttsInfo("หยุดเสียงแล้ว")});
 $("quickGrid").addEventListener("click",e=>{const b=e.target.closest("[data-action]");if(b)execute(b.dataset.action)});
 $("btnMicTest").addEventListener("click",micTest);
 $("btnSave").addEventListener("click",()=>saveNote());
@@ -294,5 +319,5 @@ $("btnClear").addEventListener("click",()=>{history=[];store.remove("mjv11.histo
 window.addEventListener("online",capabilities);window.addEventListener("offline",capabilities);
 if(ttsSupported)speechSynthesis.addEventListener?.("voiceschanged",capabilities);
 if("serviceWorker" in navigator&&window.isSecureContext)navigator.serviceWorker.register("./sw.js").catch(()=>{});
-renderHistory();capabilities();setTimeout(updateVoiceInfo,1700);log("My Jarvis v1.1.2 เริ่มใช้งาน");
+renderHistory();capabilities();setTimeout(updateVoiceInfo,1700);log("My Jarvis v1.1.3 เริ่มใช้งาน");
 })();
