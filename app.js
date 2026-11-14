@@ -162,6 +162,8 @@ function listen(){
   };
   status("รู้จำเสียงไม่สำเร็จ: "+(help[error]||error)+" ใช้ช่องพิมพ์คำสั่งได้ครับ");
   log("VOICE ERROR: "+error);
+  reset();
+  try{r.abort()}catch{}
  };
  r.onend=()=>{
   reset();
