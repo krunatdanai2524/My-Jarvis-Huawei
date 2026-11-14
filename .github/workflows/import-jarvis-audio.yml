@@ -1,0 +1,30 @@
+name: Add prerecorded Thai greeting to Jarvis
+on:
+  push:
+    paths:
+      - .github/workflows/import-jarvis-audio.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  import-audio:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download generated Thai greeting MP3
+        env:
+          SOURCE_AUDIO: https://resource2.heygen.ai/text_to_speech/8f1bdae5d24f414ab7bb1c2e4df3455e/bba701d6054041ed881626391e02865c/id=bac1d339640742d9aedf3700460ff3da.mp3
+        run: |
+          mkdir -p assets
+          curl --fail --location --show-error --silent --retry 2 --max-time 90 "$SOURCE_AUDIO" --output assets/jarvis-greeting-th.mp3
+          test "$(wc -c < assets/jarvis-greeting-th.mp3)" -gt 1500
+          file assets/jarvis-greeting-th.mp3 | grep -Ei 'audio|mpeg|mp3'
+      - name: Commit saved MP3 to repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/jarvis-greeting-th.mp3
+          if ! git diff --cached --quiet; then
+            git commit -m "Store Jarvis Thai greeting audio for offline playback"
+            git push
+          fi
