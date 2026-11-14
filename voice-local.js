@@ -7,6 +7,20 @@
   if (!loadBtn || !recBtn || !state || !progress || !heard) return;
   let worker = null, ready = false, loading = false, transcribing = false, recording = null;
   let lastProgress = "";
+  const ackAudio=$("ackAudio"), ackBtn=$("btnAckReplay");
+  function playAck(){
+    if(!ackAudio)return;
+    if(ackBtn)ackBtn.hidden=false;
+    try{
+      ackAudio.currentTime=0;
+      const playback=ackAudio.play();
+      if(playback&&typeof playback.catch==="function")playback.catch(()=>{
+        setState("รับคำสั่งแล้ว แตะ “ฟังเสียงตอบรับ” หากเบราว์เซอร์ไม่ยอมเล่นอัตโนมัติ");
+      });
+    }catch(e){setState("เปิดเสียงตอบรับอัตโนมัติไม่ได้ แตะปุ่มฟังเสียงตอบรับ")}
+  }
+  if(ackBtn)ackBtn.addEventListener("click",playAck);
+
   const setState = (msg, isError = false) => {
     state.textContent = msg;
     state.style.color = isError ? "#ffb4bb" : "#9ce5fc";
@@ -43,6 +57,7 @@
           heard.textContent = "Whisper ได้ยิน: " + text;
           setState("ถอดเสียงสำเร็จ ส่งคำสั่งเข้า Jarvis แล้ว");
           window.dispatchEvent(new CustomEvent("jarvis:voice-command", {detail:{text}}));
+          playAck();
         } else {
           heard.textContent = "Whisper ยังไม่พบคำพูด ลองพูดใกล้ไมโครโฟน";
           setState("ถอดเสียงแล้ว แต่ไม่ได้ข้อความ ลองใหม่อีกครั้ง",true);
