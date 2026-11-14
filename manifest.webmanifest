@@ -1,0 +1,20 @@
+{
+  "id": "./",
+  "name": "My Jarvis สำหรับครูณัฐ",
+  "short_name": "My Jarvis",
+  "description": "ผู้ช่วยคำสั่งภาษาไทยสำหรับ Huawei MatePad 11",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "lang": "th",
+  "background_color": "#050b16",
+  "theme_color": "#07162b",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
