@@ -305,6 +305,7 @@ function capabilities(){
  if(!isSecureContext)$("micState").textContent="ต้องเปิดผ่าน HTTPS"
 }
 $("commandForm").addEventListener("submit",e=>{e.preventDefault();send($("command").value)});
+window.addEventListener("jarvis:voice-command",event=>{const text=event&&event.detail&&event.detail.text;if(typeof text==="string"&&text.trim())send(text)});
 $("btnListen").addEventListener("click",listen);
 $("btnSpeak").addEventListener("click",()=>say("สวัสดีครับครูณัฐ ผมจาร์วิส พร้อมรับคำสั่งครับ","th-TH",true));
 $("btnRecorded").addEventListener("click",playRecordedGreeting);
@@ -319,5 +320,5 @@ $("btnClear").addEventListener("click",()=>{history=[];store.remove("mjv11.histo
 window.addEventListener("online",capabilities);window.addEventListener("offline",capabilities);
 if(ttsSupported)speechSynthesis.addEventListener?.("voiceschanged",capabilities);
 if("serviceWorker" in navigator&&window.isSecureContext)navigator.serviceWorker.register("./sw.js").catch(()=>{});
-renderHistory();capabilities();setTimeout(updateVoiceInfo,1700);log("My Jarvis v1.1.3 เริ่มใช้งาน");
+renderHistory();capabilities();setTimeout(updateVoiceInfo,1700);log("My Jarvis v1.2 เริ่มใช้งาน");
 })();
