@@ -8,13 +8,13 @@
 <title>MY JARVIS | KruNuth Huawei Edition</title>
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./styles.css?v=20261114voicefix2">
-<script src="./app.js?v=20261114voicefix2" defer></script>
+<link rel="stylesheet" href="./styles.css?v=20261114soundcheck3">
+<script src="./app.js?v=20261114soundcheck3" defer></script>
 </head>
 <body>
 <div class="shell">
 <header class="topbar">
- <div class="brand"><div class="brand-mark">J</div><div><div class="brand-main">MY <span>JARVIS</span> <small>v1.1.1</small></div><div class="brand-sub">KRUNUTH • HUAWEI EDITION</div></div></div>
+ <div class="brand"><div class="brand-mark">J</div><div><div class="brand-main">MY <span>JARVIS</span> <small>v1.1.2</small></div><div class="brand-sub">KRUNUTH • HUAWEI EDITION</div></div></div>
  <div class="badge" id="network">กำลังตรวจสอบระบบ</div>
 </header>
 <main>
@@ -26,7 +26,9 @@
   <p id="status" class="response" role="status" aria-live="polite">ระบบพร้อมรับคำสั่งข้อความ</p>
   <div class="voice-row">
    <button id="btnListen" class="btn primary">🎙 เริ่มพูดคำสั่ง</button>
-   <button id="btnSpeak" class="btn">ทดสอบเสียงตอบ</button>
+   <button id="btnSpeak" class="btn">ทดสอบพูดภาษาไทย</button>
+   <button id="btnSpeakEn" class="btn">ทดสอบพูดภาษาอังกฤษ</button>
+   <button id="btnBeep" class="btn">🔊 ทดสอบลำโพง (เสียงปี๊บ)</button>
    <button id="btnStop" class="btn">หยุดเสียง</button>
   </div>
   <form id="commandForm" class="command-row">
@@ -35,6 +37,7 @@
    <button class="btn primary" type="submit">ส่งคำสั่ง</button>
   </form>
   <p id="heardText" class="hint" role="status" aria-live="polite">เสียงที่จับได้: ยังไม่มี</p>
+  <p id="ttsDebug" class="hint" role="status" aria-live="polite">สถานะเสียงตอบ: ยังไม่ได้ทดสอบ</p>
   <p id="voiceInfo" class="hint">กำลังตรวจสอบความสามารถด้านเสียงของเบราว์เซอร์...</p>
   <p class="hint">ทดสอบแบบพิมพ์ก่อน: พิมพ์ "บอกเวลา" แล้วกดส่งคำสั่ง หากปุ่มรับเสียงค้างเกิน 15 วินาที ระบบจะแจ้งข้อผิดพลาด</p>
   <div id="linkFallback" class="link-fallback" hidden></div>
@@ -45,6 +48,7 @@
    <div class="state-line"><span>คำสั่งข้อความ</span><b class="good">พร้อม</b></div>
    <div class="state-line"><span>แปลงเสียงเป็นข้อความ</span><b id="asr">ตรวจสอบ</b></div>
    <div class="state-line"><span>เสียงพูดตอบ</span><b id="tts">ตรวจสอบ</b></div>
+   <div class="state-line"><span>เสียงพูดที่ติดตั้ง</span><b id="voiceInventory">กำลังตรวจสอบ</b></div>
    <div class="state-line"><span>การใช้ไมโครโฟน</span><b id="micState">ยังไม่ทดสอบ</b></div>
    <div class="state-line"><span>เชื่อมต่อคอมพิวเตอร์</span><b class="warning">ยังไม่เชื่อม</b></div>
    <button id="btnMicTest" class="btn outline">ทดสอบสิทธิ์ไมโครโฟน</button>
